@@ -10,13 +10,32 @@ resources:
       name: sample_job
 
       # Scheduling trigger: the job runs on its own, without manual intervention.
-      # In the dev target (mode: development) the trigger is PAUSED on deploy;
-      # in prod it is active.
+      # In dev (mode: development) the trigger is PAUSED on deploy; in prod it
+      # is active. Two sample styles — keep ONE `trigger` (or none for manual
+      # runs) and delete the other.
       trigger:
-        # Recurring run every 1 day from the last run
+        # Style A (active): recurring run every 1 day from the last run.
         periodic:
           interval: 1
           unit: DAYS
+        # Style B (commented): run as soon as a new file lands in a UC volume
+        # path — typical for ingestion jobs.
+        # file_arrival:
+        #   # uc_volume_path OR cloud_storage_path (s3://bucket/prefix)
+        #   uc_volume_path: /Volumes/${var.catalog}/${var.schema}/landing
+        #   # How often the workspace checks for new files
+        #   poll_interval:
+        #     time_unit: MINUTES
+        #     interval: 1
+
+      # Notifications on run completion/failure — sample, remove freely.
+      # email_notifications requires the recipients to be workspace users.
+      # email_notifications:
+      #   on_failure:
+      #     - YOUR-EMAIL
+      # webhook_notifications:
+      #   on_failure:
+      #     - id: "00000000-0000-0000-0000-000000000000"  # webhook id from workspace admin settings
 
       # Parameters passed to ALL tasks of the job (job-level keywords).
       # Here we propagate catalog and schema as bundle variables, so the same
@@ -77,3 +96,54 @@ resources:
               # The wheel built by the `artifacts` section in databricks.yml:
               # the bundle compiles it, uploads it and installs it on the cluster
               - ../dist/*.whl
+
+# ── Advanced task patterns (SAMPLES — copy into `tasks:` above as needed) ──
+#
+# 1) for_each: run one task definition N times (fan-out over config JSON).
+#    Useful to process many tables/sources with the same logic.
+#
+# - task_key: process_tables
+#   for_each_task:
+#     # Inputs can be literal JSON or a task output reference:
+#     #   input: ${tasks.list_tables.values}
+#     input: '["bronze", "silver", "gold"]'
+#     task:
+#       task_key: process_one_table
+#       notebook_task:
+#         notebook_path: ../src/notebooks/sample_notebook.py
+#         # {{input}} is the current element of the iteration
+#         base_parameters:
+#           table_name: "{{input}}"
+#
+# 2) if/else condition: branch the DAG on a runtime condition.
+#
+# - task_key: has_new_data_check
+#   condition_task:
+#     op: EQUAL
+#     # left/right are compared as strings; any task value or parameter works
+#     left: "{{job.parameters.new_data_available}}"
+#     right: "true"
+#
+# - task_key: run_full_load
+#   depends_on:
+#     - task_key: has_new_data_check
+#       # outcome of the condition task: true / false
+#       outcome: "true"
+#   notebook_task:
+#     notebook_path: ../src/notebooks/sample_notebook.py
+#
+# - task_key: skip_full_load
+#   depends_on:
+#     - task_key: has_new_data_check
+#       outcome: "false"
+#   sql_task:
+#     # Trivial no-op query on any SQL warehouse
+#     warehouse_id: "TODO(post-fork): your SQL warehouse id"
+#     query:
+#       query_text: "SELECT 1"
+#
+# 3) run_job: call another job as a task (job-of-jobs orchestration).
+#
+# - task_key: downstream_job
+#   run_job_task:
+#     job_id: "TODO(post-fork): numeric id of the target job"

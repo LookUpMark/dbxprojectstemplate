@@ -8,6 +8,7 @@ project-level overviews. Read the overviews first, then dive into per-file guide
 - [Architecture](overview/architecture.md) — how the project fits together.
 - [Pipelines](overview/pipelines.md) — end-to-end phases, files and methods.
 - [Conventions](overview/conventions.md) — the rules this template enforces.
+- [Monitoring](overview/monitoring.md) — secrets, job notifications, alerting patterns.
 
 ## Source mirror (`src/`)
 

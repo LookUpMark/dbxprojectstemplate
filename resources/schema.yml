@@ -1,0 +1,34 @@
+# Unity Catalog objects managed as bundle resources.
+# Declaring them here means `databricks bundle deploy` CREATES them in the
+# workspace (idempotently) instead of relying on runtime SQL in notebooks.
+# Keep only what your project truly owns; delete the rest — nothing depends
+# on this file being present.
+resources:
+  schemas:
+    # Logical key: referenceable as ${resources.schemas.main.id} in other
+    # resource files (e.g. pipelines, jobs).
+    main_schema:
+      # Catalog resolved from the bundle variable, so dev/prod land in
+      # different catalogs without touching this definition.
+      catalog_name: ${var.catalog}
+      # Schema name resolved from the bundle variable.
+      name: ${var.schema}
+      # COMMENT is the metadata Genie and dashboards read for context.
+      comment: "Main schema created by the ${bundle.name} bundle"
+
+  volumes:
+    # Volume for non-tabular data: files, ML artifacts, Auto Loader
+    # checkpoints. Volume names must be lowercase alphanumeric + underscores.
+    checkpoints_volume:
+      # The volume lives inside the schema declared above; the ${resources...
+      # reference resolves after schema creation on first deploy.
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.main_schema.name}
+      name: checkpoints
+      volume_type: MANAGED
+      comment: "Managed volume for streaming checkpoints and artifacts"
+
+  # HOW TO REMOVE: delete this file (or its `include` entry in
+  # databricks.yml `include: resources/*.yml`) and redeploy. The objects
+  # stay in the workspace until deleted manually — bundles do NOT drop
+  # resources that disappear from the definition.

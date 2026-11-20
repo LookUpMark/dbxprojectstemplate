@@ -1,0 +1,41 @@
+# ML resources managed as code: experiment, registered model, serving endpoint.
+# All entries are independent samples — keep the ones your project uses and
+# delete the rest. Removing one here does NOT delete the deployed object
+# (re-deploy simply stops managing it).
+resources:
+  experiments:
+    # MLflow experiment created by the bundle instead of
+    # mlflow.set_experiment() at runtime. Referenceable as
+    # ${resources.experiments.ml_experiment.id}.
+    ml_experiment:
+      name: /Workspace/Users/${workspace.current_user.short_name}/${bundle.name}-experiments
+      # Experiment artifact location defaults to DBFS; set artifact_path to
+      # a UC volume for governed storage.
+      comment: "MLflow experiment managed by the ${bundle.name} bundle"
+
+  registered_models:
+    # Model registry entry in Unity Catalog: versions and aliases (@champion)
+    # are managed by MLflow at runtime; the bundle only guarantees the
+    # existence of the model object.
+    champion_model:
+      catalog_name: ${var.catalog}
+      schema_name: ${var.schema}
+      name: champion_model
+      comment: "Registered model promoted from the training pipeline"
+
+  # WARNING: a serving endpoint consumes compute (bills per hour) even when
+  # idle. Keep it commented out until you actually deploy a model version.
+  # model_serving_endpoints:
+  #   champion_endpoint:
+  #     name: ${bundle.name}-champion-endpoint
+  #     config:
+  #       served_entities:
+  #         - entity_name: ${var.catalog}.${var.schema}.champion_model
+  #           # Serving needs a concrete version or alias; @champion tracks
+  #           # whatever version currently holds the alias.
+  #           entity_version: "1"
+  #           scale_to_zero_enabled: true
+  #       traffic_config:
+  #         routes:
+  #           - served_model_name: champion_model-1
+  #             traffic_percentage: 100
