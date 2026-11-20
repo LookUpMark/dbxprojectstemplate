@@ -26,9 +26,8 @@ __pycache__/
 .claude/
 # VS Code workspace settings (personal, machine-specific)
 .vscode/
-# Operational context for AI agents (skills, memory, checklists...)
-.agents/
-
+# Operational context for AI agents is PART of this template: keep .agents/ in git.
+# .claude/
 # ── Secrets ───────────────────────────────────────────────────────────────
 # Environment files: NEVER commit tokens (e.g. GITHUB_MCP_PAT, HF_TOKEN)
 .env
