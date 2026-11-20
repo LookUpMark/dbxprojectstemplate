@@ -41,3 +41,10 @@ scratch/**
 # Exploratory notebooks/code (only the README is tracked)
 **/explorations/**
 **/!explorations/README.md
+# ── Stray artifacts ────────────────────────────────────────────────────────
+# Compiled bytecode outside __pycache__ (e.g. pyc-only builds)
+*.pyc
+# Runtime / deploy logs
+*.log
+# macOS Finder metadata
+.DS_Store
