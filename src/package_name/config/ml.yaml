@@ -1,0 +1,13 @@
+# ML domain settings.
+#
+# Experiment tracking, model endpoints and registry locations.
+
+# MLflow experiment paths, relative to the user workspace root.
+experiment_root: ml-experiments
+agent_experiment: ml-agents
+
+# Model serving endpoint used by agent notebooks.
+chat_endpoint: databricks-claude-sonnet
+
+# Unity Catalog schema holding registered models.
+registry_schema: ml

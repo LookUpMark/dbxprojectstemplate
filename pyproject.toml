@@ -1,0 +1,40 @@
+[project]
+name = "package_name"
+version = "0.0.1"
+authors = [{ name = "YOUR-NAME" }]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "loguru",
+    # Any dependencies for jobs and pipelines in this project can be added here
+    # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies
+    #
+    # LIMITATION: for pipelines, dependencies are cached during development;
+    # add dependencies to the 'environment' section of your pipeline.yml file instead
+    "pydantic>=2.14.4",
+    "pyyaml>=6.0.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "ruff",
+    "databricks-dlt",
+    "databricks-connect>=16.4,<16.5",
+    "ipykernel",
+]
+
+[project.scripts]
+main = "package_name.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+# I notebook usano magic e globali Databricks (spark, dbutils, display): escluderli dal lint
+extend-exclude = ["*.ipynb", "**/explorations"]
+
+[tool.ruff.lint]
+# F821: spark/dbutils/display sono globali iniettati dal runtime Databricks
+ignore = ["F821"]

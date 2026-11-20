@@ -1,0 +1,35 @@
+# Main ETL pipeline (Lakeflow / Delta Live Tables) of the bundle.
+# A PIPELINE processes data declaratively: you define tables
+# (@dp.table, @dp.materialized_view...) and Databricks computes/refreshes the data.
+resources:
+  pipelines:
+    # Logical key: referenceable as ${resources.pipelines.sample_pipeline.id}
+    sample_pipeline:
+      # Name shown in the UI (Jobs & Pipelines); prefixed "[dev ...]" in dev
+      name: sample_pipeline
+      # Destination Unity Catalog for the pipeline's tables
+      catalog: ${var.catalog}
+      # Destination schema (namespace inside the catalog)
+      schema: ${var.schema}
+      # true = SERVERLESS pipeline: Databricks manages the compute, scales
+      # automatically, no clusters to configure or pay for when idle
+      serverless: true
+      # Folder with the pipeline source code (relative to the bundle root):
+      # transformations importable by the pipeline live here
+      root_path: "../src/sample_pipeline"
+
+      # Python files executed as part of the pipeline: each file defines
+      # tables/flows with databricks-dlt decorators (e.g. @dp.table)
+      libraries:
+        - glob:
+            # Every .py inside transformations/, recursively
+            include: ../src/sample_pipeline/transformations/**
+
+      # Python dependencies of the pipeline. IMPORTANT: pipeline dependencies
+      # must NOT go only in the local pyproject (they are cached in development):
+      # here we declare an EDITABLE environment pointing to the deployed bundle
+      # folder, so the synced pyproject.toml is used directly and dependencies
+      # stay in sync with the code.
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}

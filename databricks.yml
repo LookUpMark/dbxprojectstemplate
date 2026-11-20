@@ -1,0 +1,94 @@
+# Declarative Automation Bundle (DAB) definition for "package_name".
+# DABs describe how to deploy jobs/pipelines on Databricks as code (IaC).
+# Docs: https://docs.databricks.com/dev-tools/bundles/index.html
+bundle:
+  # Unique bundle name: it appears in deployed resource names
+  # (e.g. job "[dev <user>] sample_job") and in the workspace path.
+  name: dbxprojectstemplate
+  # UUID: identifies the bundle uniquely across renames. Regenerate your own with
+  # `databricks bundle init` (or any uuidgen) after forking.
+  #
+  # even if the name changes. Do not change it.
+  uuid: ec442975-1fe5-4485-af51-3c3f97f812d0
+
+# External YAML files to include in the bundle definition:
+# jobs and pipelines live here (resources/*.yml), keeping this file lightweight.
+include:
+  - resources/*.yml
+
+# Artifacts to build before deploy: the Python wheel for the "package_name" package
+# is created with `uv build --wheel` and uploaded automatically, so python_wheel_task
+# jobs can import the shared code (src/package_name/).
+artifacts:
+  python_artifact:
+    type: whl
+    build: uv build --wheel
+
+# Sync: which local files/folders to upload to the workspace during `bundle deploy`.
+# NOTE: when `paths` is defined it acts as a WHITELIST — anything not listed
+# is NOT uploaded. This keeps docs, local tooling and IDE config out of the workspace.
+sync:
+  paths:
+    # Source code of the shared package and the ETL pipeline
+    - src/
+    # Tasks runnable as Lakeflow job stages (def task(*) -> None pattern)
+    - tasks/
+    # Job/pipeline definitions included via the `include` section
+    - resources/
+    # Sample datasets referenceable from notebooks/tasks on clusters
+    - fixtures/
+    # pyproject.toml is needed on the workspace: the pipeline uses it as an
+    # editable environment (--editable ${workspace.file_path}) to resolve dependencies
+    - pyproject.toml
+
+# Bundle variables: referenced as ${var.name} in resource files.
+# Actual values are assigned in the dev/prod targets below, so the same
+# definition runs on different environments without duplicating YAML.
+variables:
+  # Unity Catalog where tables/pipelines are created
+  catalog:
+    description: The catalog to use
+  # Schema (namespace inside the catalog) for the project's data
+  schema:
+    description: The schema to use
+
+# Targets: distinct deploy environments (dev/prod). `databricks bundle deploy
+# --target <name>` picks one; each target can override variables, workspace,
+# permissions and mode.
+targets:
+  dev:
+    # mode: development = personal deploy:
+    # - resources are prefixed with "[dev <user>]" to avoid clashing with others
+    # - job schedules and triggers are automatically PAUSED
+    mode: development
+    # Default target when --target is omitted
+    default: true
+    workspace:
+      # TODO(post-fork): replace with your workspace URL (`databricks configure`)
+      host: https://YOUR-WORKSPACE-HOST.cloud.databricks.com
+    variables:
+      # In dev we use the "workspace" catalog (non-Unity, always available)
+      catalog: workspace
+      # Each developer writes to their own schema to isolate data
+      schema: ${workspace.current_user.short_name}
+  prod:
+    # mode: production = official deploy:
+    # - no prefix on resources
+    # - schedules and triggers ACTIVE
+    # - requires explicit authorizations (service principal or user)
+    mode: production
+    workspace:
+      # TODO(post-fork): replace with your workspace URL (`databricks configure`)
+      host: https://YOUR-WORKSPACE-HOST.cloud.databricks.com
+      # Explicit root_path: forces a single copy of the bundle in prod
+      # (avoids duplicate deploys from different machines/users)
+      root_path: /Workspace/Users/YOUR-EMAIL/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      # In prod, data lives in the "workspace" catalog, "prod" schema
+      catalog: workspace
+      schema: prod
+    # ACL permissions on the deployed bundle: who can view/modify it
+    permissions:
+      # TODO(post-fork): replace with the account managing production deploys
+      - user_name: YOUR-EMAIL
+        level: CAN_MANAGE

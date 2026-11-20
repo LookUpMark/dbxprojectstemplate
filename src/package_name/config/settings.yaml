@@ -1,0 +1,13 @@
+# General project settings.
+#
+# Values that identify the project and its Databricks deployment defaults.
+
+# Logical project name, used in deployed resource names and log prefixes.
+project_name: dbxprojectstemplate
+
+# Default Unity Catalog identifiers, overridden by job parameters or CLI args.
+catalog: workspace
+schema: default
+
+# Python log level for the centralized loguru configuration.
+log_level: INFO

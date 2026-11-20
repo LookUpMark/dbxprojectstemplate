@@ -1,0 +1,18 @@
+# ETL domain settings.
+#
+# Medallion layer names and streaming checkpoint locations.
+
+# Schema holding the medallion tables created by the playbook assignments.
+scratch_schema: ml_playbook_scratch
+
+# Bronze layer: raw events table.
+bronze_table: bronze_events
+
+# Silver layer: cleaned and deduplicated events table.
+silver_table: silver_events
+
+# Gold layer: customer totals aggregate table.
+gold_table: gold_customer_totals
+
+# Auto Loader checkpoint path template ({catalog}, {scratch_schema}, {table}).
+checkpoint_template: /Volumes/{catalog}/{scratch_schema}/checkpoints/{table}

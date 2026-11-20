@@ -1,0 +1,79 @@
+# Sample job for the "package_name" bundle.
+# A JOB orchestrates one or more tasks (notebooks, Python wheels, pipelines, SQL...).
+# This job chains: notebook -> Python wheel -> pipeline refresh.
+resources:
+  jobs:
+    # Logical key of the job: use it from the CLI with `databricks bundle run sample_job`
+    sample_job:
+      # Name shown in the Databricks UI (Jobs & Pipelines).
+      # In dev it is automatically prefixed: "[dev <user>] sample_job"
+      name: sample_job
+
+      # Scheduling trigger: the job runs on its own, without manual intervention.
+      # In the dev target (mode: development) the trigger is PAUSED on deploy;
+      # in prod it is active.
+      trigger:
+        # Recurring run every 1 day from the last run
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      # Parameters passed to ALL tasks of the job (job-level keywords).
+      # Here we propagate catalog and schema as bundle variables, so the same
+      # job runs on different environments without touching this definition.
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+
+      # Job tasks, executed in order according to `depends_on` (DAG).
+      tasks:
+        # Task 1: setup notebook (default catalog/schema)
+        - task_key: notebook_task
+          notebook_task:
+            # Path relative to the bundle root; the notebook reads job parameters
+            # via dbutils.widgets (catalog, schema). Format: .py Databricks
+            # notebook source (project convention — never .ipynb).
+            # Convention: notebooks live in src/notebooks/
+            notebook_path: ../src/notebooks/sample_notebook.py
+
+        # Task 2: entry point of the "package_name" Python wheel
+        - task_key: python_wheel_task
+          # Runs ONLY after task 1 completes
+          depends_on:
+            - task_key: notebook_task
+          python_wheel_task:
+            # Python package name (must match pyproject.toml)
+            package_name: dbxprojectstemplate
+            # Entry point declared in pyproject.toml ([project.scripts] main = ...)
+            entry_point: main
+            # CLI arguments passed to the main function (argparse parser)
+            parameters:
+              - "--catalog"
+              - "${var.catalog}"
+              - "--schema"
+              - "${var.schema}"
+          # Execution environment (serverless cluster + dependencies), defined below
+          environment_key: default
+
+        # Task 3: refresh of the ETL pipeline defined in sample_pipeline.pipeline.yml
+        - task_key: refresh_pipeline
+          # Runs after task 1 (in parallel with task 2, same depends_on)
+          depends_on:
+            - task_key: notebook_task
+          pipeline_task:
+            # ${resources.<key>.id} automatically resolves the ID of the
+            # pipeline deployed by the bundle: no hardcoded IDs
+            pipeline_id: ${resources.pipelines.sample_pipeline.id}
+
+      # Environments referenced by tasks: serverless cluster + Python libraries.
+      environments:
+        - environment_key: default
+          spec:
+            # Serverless environment version (pre-installed library channel)
+            environment_version: "5"
+            dependencies:
+              # The wheel built by the `artifacts` section in databricks.yml:
+              # the bundle compiles it, uploads it and installs it on the cluster
+              - ../dist/*.whl

@@ -1,0 +1,147 @@
+# Taskfile: task runner (go-task) to automate the project's repetitive commands.
+# Usage: `task <name>` · full list: `task --list` · docs: https://taskfile.dev
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+# Reusable variables, referenced in tasks with {{.NAME}}
+vars:
+  # Python package name (consistent with pyproject.toml)
+  PACKAGE: package_name
+  # Development deploy target name (databricks.yml -> targets.dev)
+  DBX_TARGET_DEV: dev
+  # Production deploy target name (databricks.yml -> targets.prod)
+  DBX_TARGET_PROD: prod
+
+tasks:
+  # Default task: what runs with bare `task`
+  default:
+    desc: Show the list of available tasks
+    cmds:
+      - task --list
+    silent: true # do not print the command before its output
+
+  # ── Code quality ──────────────────────────────────────────────────────
+  # Ruff: blazing-fast Python linter + formatter (one tool instead of
+  # flake8/isort/black). Lints src, tasks and tests.
+  ruff-check:
+    desc: Ruff check (report only, no modifications)
+    cmds:
+      - uv run ruff check src tasks tests
+
+  ruff-fix:
+    desc: Ruff check with autofix
+    cmds:
+      # --fix automatically corrects auto-fixable issues
+      - uv run ruff check --fix src tasks tests
+
+  ruff-format:
+    desc: Format the code with ruff
+    cmds:
+      # Reformats (black equivalent)
+      - uv run ruff format src tasks tests
+
+  format-check:
+    desc: Verify formatting without modifying anything
+    cmds:
+      # --check does not touch files: it fails if something is unformatted
+      # (useful in CI)
+      - uv run ruff format --check src tasks tests
+
+  lint:
+    desc: Full check (ruff check + format check)
+    cmds:
+      # `task:` = dependency: runs another task before continuing
+      - task: ruff-check
+      - task: format-check
+
+  # Full lint with correction: fix → format → final double check
+  lint-all:
+    desc: Full lint with autofix (ruff fix → format → final check)
+    cmds:
+      - task: ruff-fix
+      - task: ruff-format
+      - task: ruff-check
+      - task: format-check
+
+  # ── Tests ─────────────────────────────────────────────────────────────
+  test:
+    desc: Run unit tests with pytest
+    cmds:
+      # via uv run: uses the project venv (.venv) managed by uv
+      - uv run pytest
+
+  # ── Environment and build ─────────────────────────────────────────────
+  sync:
+    desc: Install/sync dependencies with uv
+    cmds:
+      # --dev also includes dependency-groups (pytest, ruff, databricks-connect...)
+      - uv sync --dev
+
+  build:
+    desc: Build the project wheel
+    cmds:
+      # Generates dist/*.whl: the artifact the bundle installs on clusters
+      - uv build --wheel
+
+  # ── Databricks deploy ─────────────────────────────────────────────────
+  # Deploy: builds the wheel, syncs files (sync.paths in databricks.yml),
+  # creates/updates jobs and pipelines on the target workspace.
+  deploy-dev:
+    desc: Deploy the bundle to the dev target
+    cmds:
+      # Dev target: resources prefixed "[dev <user>]", schedules paused
+      - databricks bundle deploy --target {{.DBX_TARGET_DEV}}
+
+  deploy-prod:
+    desc: Deploy the bundle to the prod target
+    cmds:
+      # WARNING: in prod schedules and triggers are ACTIVE
+      - databricks bundle deploy --target {{.DBX_TARGET_PROD}}
+
+  validate:
+    desc: Validate the bundle configuration without deploying
+    cmds:
+      # Checks YAML syntax, variables, references: always before a deploy
+      - databricks bundle validate
+
+  # ── Run ───────────────────────────────────────────────────────────────
+  run-job:
+    desc: 'Run a bundle job (usage: task run-job -- <job_name>)'
+    cmds:
+      # {{.CLI_ARGS}} = everything passed after "--" on the command line
+      # e.g.: task run-job -- sample_job
+      - databricks bundle run {{.CLI_ARGS}}
+
+  run-pipeline:
+    desc: 'Run a bundle pipeline (usage: task run-pipeline -- <pipeline_name>)'
+    cmds:
+      # --restart: if the pipeline is already running, restarts it clean
+      - databricks bundle run {{.CLI_ARGS}} --restart
+
+  # ── Workspace ─────────────────────────────────────────────────────────
+  ws-list:
+    desc: 'List objects in the workspace (usage: task ws-list -- /Workspace/path)'
+    cmds:
+      - databricks workspace list {{.CLI_ARGS}}
+
+  ws-download:
+    desc: 'Download a file from the workspace (usage: task ws-download -- /Workspace/path/file ./local)'
+    cmds:
+      # export downloads notebooks/files from the workspace to the local filesystem
+      - databricks workspace export {{.CLI_ARGS}}
+
+  # ── Composite ─────────────────────────────────────────────────────────
+  check:
+    desc: Linting + tests
+    cmds:
+      - task: lint
+      - task: test
+
+  all:
+    desc: Full check → fix → test → deploy dev
+    cmds:
+      # Complete development pipeline: correct, verify, deploy to dev
+      - task: lint-all
+      - task: test
+      - task: deploy-dev
