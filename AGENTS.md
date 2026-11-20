@@ -83,8 +83,8 @@ CLI installation: https://docs.databricks.com/dev-tools/cli/install
 - **Target `dev`** (default): `mode: development`, resources prefixed with `[dev ...`,
   schedules and triggers paused.
 - **Target `prod`**: `mode: production`, root path
-  `/Workspace/Users/marcantoniolopez0@gmail.com/.bundle/${bundle.name}/${bundle.target}`.
-- Workspace host: `https://dbc-ab8a9383-5556.cloud.databricks.com`
+  `/Workspace/Users/YOUR-EMAIL/.bundle/${bundle.name}/${bundle.target}`.
+- Workspace host: `https://YOUR-WORKSPACE-HOST.cloud.databricks.com`
 
 ## Project Instructions
 

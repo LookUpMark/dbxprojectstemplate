@@ -1,4 +1,4 @@
-# src/sandbox/
+# src/package_name/
 
 Shared Python code, usable by the bundle's jobs and pipelines.
 

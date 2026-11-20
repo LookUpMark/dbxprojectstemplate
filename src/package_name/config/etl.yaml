@@ -2,8 +2,8 @@
 #
 # Medallion layer names and streaming checkpoint locations.
 
-# Schema holding the medallion tables created by the playbook assignments.
-scratch_schema: ml_playbook_scratch
+# Schema holding the medallion tables used by the sample medallion pipeline.
+scratch_schema: sample_medallion
 
 # Bronze layer: raw events table.
 bronze_table: bronze_events

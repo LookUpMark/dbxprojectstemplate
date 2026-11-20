@@ -22,7 +22,7 @@ include:
 ## Current files
 
 - `sample_job.job.yml` — sample job with a schedule (paused in dev).
-- `sandbox_etl.pipeline.yml` — sample ETL pipeline.
+- `sample_pipeline.pipeline.yml` — sample ETL pipeline.
 
 See https://docs.databricks.com/dev-tools/bundles/deployment-modes.html for the
 dev/prod differences.

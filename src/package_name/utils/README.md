@@ -1,4 +1,4 @@
-# src/sandbox/utils/
+# src/package_name/utils/
 
 Shared package utilities.
 

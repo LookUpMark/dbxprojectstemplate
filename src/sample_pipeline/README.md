@@ -1,6 +1,6 @@
-# sandbox
+# sample_pipeline
 
-This folder defines all source code for the sandbox pipeline:
+This folder defines all source code for the sample pipeline:
 
 - `explorations/`: Ad-hoc notebooks used to explore the data processed by this pipeline.
   Notebooks are `.py` Databricks notebook source files (first line exactly
@@ -14,9 +14,9 @@ This folder defines all source code for the sandbox pipeline:
 To get started, go to the `transformations` folder -- most of the relevant source code lives there:
 
 * By convention, every dataset under `transformations` is in a separate file.
-* Take a look at the sample called "sample_trips_sandbox.py" to get familiar with the syntax.
+* Take a look at the sample called "sample_trips.py" to get familiar with the syntax.
   Read more about the syntax at https://docs.databricks.com/dlt/python-ref.html.
 * If you're using the workspace UI, use `Run file` to run and preview a single transformation.
-* If you're using the CLI, use `databricks bundle run sandbox_etl --refresh sample_trips_sandbox` to run a single transformation.
+* If you're using the CLI, use `databricks bundle run sample_pipeline --refresh sample_trips` to run a single transformation.
 
 For more tutorials and reference material, see https://docs.databricks.com/dlt.
